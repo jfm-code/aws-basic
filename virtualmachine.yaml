@@ -13,6 +13,9 @@ Parameters:
     Type: String
     Default: 't3.micro'
     AllowedValues: ['t3.micro', 't3.small', 't3.medium']
+  KeyName:   # Added KeyName Parameter
+    Description: 'Name of an existing EC2 KeyPair to enable SSH access'
+    Type: 'AWS::EC2::KeyPair::KeyName'
 Mappings:
   RegionMap:
     'eu-north-1':
@@ -77,10 +80,19 @@ Resources:
     Properties:
       ImageId: !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
       InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName  # Added KeyName to associate SSH key
       IamInstanceProfile: !Ref InstanceProfile # instead of ec2-ssm-core we use a instance profile created in the same template for testability
       SecurityGroupIds: [!Ref SecurityGroup]
       SubnetId: !Ref Subnet
-      
+      UserData: !Base64 
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash -xe
+            - |
+              yum -y update
+            - |
+              /bin/echo <your name> >> /tmp/testfile.txt
 Outputs:
   InstanceId:
     Value: !Ref VM
